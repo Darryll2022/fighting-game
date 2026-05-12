@@ -9,7 +9,7 @@ class Sprite {
         this.framesMax = framesMax
         this.framesCurrent = 0
         this.framesElapsed = 0
-        this.framesHold = 20
+        this.framesHold = 10
         this.offset = offset
     }
 
@@ -42,20 +42,27 @@ class Sprite {
     }
 }
 
+// Per-sprite animation speeds. Lower = faster. At 60fps: hold=5 → 12fps anim.
+const ANIM_SPEED = {
+    idle:         10,
+    run:           6,
+    jump:          8,
+    fall:          8,
+    attack1:       5,
+    attack2:       6,
+    takeHit:       5,
+    death:         8,
+    crouch:       12,
+    crouchAttack:  5,
+}
+
 class Fighter extends Sprite {
     constructor({
-        position,
-        velocity,
-        color = 'red',
-        imageSrc,
-        scale = 1,
-        framesMax = 1,
-        offset = { x: 0, y: 0 },
-        sprites,
-        attackBox = { offset: {}, width: undefined, height: undefined }
+        position, velocity, color = 'red', imageSrc,
+        scale = 1, framesMax = 1, offset = { x: 0, y: 0 },
+        sprites, attackBox = { offset: {}, width: undefined, height: undefined }
     }) {
         super({ position, imageSrc, scale, framesMax, offset })
-
         this.velocity    = velocity
         this.width       = 50
         this.height      = 150
@@ -65,48 +72,36 @@ class Fighter extends Sprite {
         this.dead        = false
         this.sprites     = sprites
         this.lastKey     = ''
-
-        // ── Layer 1: Knockback ──────────────────────────────
         this.knockbackVelocity = 0
         this.knockbackDecay    = 0.75
         this._wasAirborne      = false
-
-        // ── Layer 2: Crouch ─────────────────────────────────
-        this.isCrouching = false
-
-        // ── Layer 3: Dash ───────────────────────────────────
+        this.isCrouching       = false
         this.dashFrames    = 0
         this.dashCooldown  = 0
         this.dashSpeed     = 14
         this.dashDirection = 0
-        this._lastTapKey   = null
-        this._lastTapTime  = 0
         this.iframes       = 0
-
         this.attackBox = {
             position: { x: this.position.x, y: this.position.y },
             offset:   attackBox.offset,
             width:    attackBox.width,
             height:   attackBox.height
         }
-
         for (const key in sprites) {
             sprites[key].image = new Image()
             sprites[key].image.src = sprites[key].imageSrc
         }
     }
 
-    // ── Dash ─────────────────────────────────────────────────────
     tryDash(direction) {
         if (this.dashCooldown > 0 || this.dashFrames > 0 || this.dead) return
         this.dashFrames    = 10
         this.dashCooldown  = 28
         this.dashDirection = direction
-        if (direction === -1) this.iframes = 6   // backdash iframes
+        if (direction === -1) this.iframes = 6
         spawnDashTrail(this.position.x + this.width / 2, this.position.y + this.height / 2, direction)
     }
 
-    // ── Attacks ──────────────────────────────────────────────────
     attack1() {
         if (this.isAttacking || this.dead) return
         this.switchSprite('attack1')
@@ -125,83 +120,60 @@ class Fighter extends Sprite {
         this.isAttacking = true
     }
 
-    // ── Take hit ─────────────────────────────────────────────────
+    // FIX 5: health clamped to 0
     takeHit(attackerX, isHeavy = false) {
-        if (this.iframes > 0) return    // backdash invincibility
-
-        this.health -= isHeavy ? 25 : 20
+        if (this.iframes > 0) return
+        this.health = Math.max(0, this.health - (isHeavy ? 25 : 20))
         this.switchSprite('takeHit')
-
         const direction = this.position.x > attackerX ? 1 : -1
         this.knockbackVelocity = direction * (isHeavy ? 10 : 6)
-
         triggerHitStop(isHeavy ? 9 : 5)
         triggerShake(isHeavy ? 8 : 4, isHeavy ? 14 : 8)
-
         const hitX = this.position.x + this.width / 2
         const hitY = this.position.y + this.height * 0.35
         spawnHitParticles(hitX, hitY, isHeavy ? '#ffcc00' : '#ffffff', isHeavy ? 12 : 7)
     }
 
-    // ── Per-frame update ─────────────────────────────────────────
     update() {
         this.draw()
         if (!this.dead) this.animateFrames()
-
         if (this.dashCooldown > 0) this.dashCooldown--
         if (this.iframes > 0)      this.iframes--
-
-        // Dash velocity override
         if (this.dashFrames > 0) {
             this.velocity.x = this.dashDirection * this.dashSpeed
             this.dashFrames--
             this.switchSprite('run')
         }
-
-        // Knockback
         if (Math.abs(this.knockbackVelocity) > 0.1) {
-            this.position.x   += this.knockbackVelocity
+            this.position.x       += this.knockbackVelocity
             this.knockbackVelocity *= this.knockbackDecay
         } else {
             this.knockbackVelocity = 0
         }
-
-        // Horizontal + canvas clamp
         this.position.x += this.velocity.x
         if (this.position.x < 0)                 this.position.x = 0
         if (this.position.x + this.width > 1024) this.position.x = 1024 - this.width
-
-        // Gravity + ground
         const wasAirborne = (this.position.y + this.height) < 576
         this.position.y  += this.velocity.y
         this.velocity.y  += gravity
-
         if (this.position.y + this.height >= 576) {
             this.velocity.y = 0
             this.position.y = 576 - this.height
             if (wasAirborne && this._wasAirborne) {
-                spawnLandingDust(
-                    this.position.x + this.width / 2,
-                    this.position.y + this.height
-                )
+                spawnLandingDust(this.position.x + this.width / 2, this.position.y + this.height)
             }
         }
         this._wasAirborne = (this.position.y + this.height) < 576
-
-        // Attack box
         this.attackBox.position.x = this.position.x + this.attackBox.offset.x
         this.attackBox.position.y = this.position.y + this.attackBox.offset.y
     }
 
-    // ── Sprite state machine ─────────────────────────────────────
+    // FIX 3: set framesHold per-sprite on switch
     switchSprite(sprite) {
-        // Death is terminal
         if (this.image === this.sprites.death.image) {
             if (this.framesCurrent === this.sprites.death.framesMax - 1) this.dead = true
             return
         }
-
-        // Don't interrupt mid-animation attacks or takeHit
         const s = this.sprites
         if (
             (this.image === s.attack1.image      && this.framesCurrent < s.attack1.framesMax - 1)      ||
@@ -209,11 +181,11 @@ class Fighter extends Sprite {
             (this.image === s.crouchAttack.image && this.framesCurrent < s.crouchAttack.framesMax - 1) ||
             (this.image === s.takeHit.image      && this.framesCurrent < s.takeHit.framesMax - 1)
         ) return
-
         const target = this.sprites[sprite]
         if (!target || this.image === target.image) return
         this.image         = target.image
         this.framesMax     = target.framesMax
         this.framesCurrent = 0
+        this.framesHold    = ANIM_SPEED[sprite] || 10  // FIX 3
     }
 }

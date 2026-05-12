@@ -291,13 +291,27 @@
 <script>
   const overlay  = document.getElementById('howToPlay')
   const startBtn = document.getElementById('startBtn')
+  let overlayDismissed = false
+
   function dismissOverlay() {
+    if (overlayDismissed) return
+    overlayDismissed = true
     overlay.style.opacity    = '0'
     overlay.style.transition = 'opacity 0.4s'
-    setTimeout(() => { overlay.style.display = 'none' }, 400)
+    setTimeout(() => {
+      overlay.style.display = 'none'
+      gameStarted = true   // FIX 6: only allow game input AFTER overlay gone
+    }, 400)
   }
-  startBtn.addEventListener('click', dismissOverlay)
-  window.addEventListener('keydown', dismissOverlay, { once: true })
+
+  startBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    dismissOverlay()
+  })
+  // Only Enter / Escape dismiss — NOT WASD/arrows (they'd ghost into the game)
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'Escape') dismissOverlay()
+  })
 </script>
 
 </body>
