@@ -66,27 +66,22 @@ class Fighter extends Sprite {
         this.sprites     = sprites
         this.lastKey     = ''
 
-        // ── Knockback (Layer 1) ─────────────────────────────
+        // ── Layer 1: Knockback ──────────────────────────────
         this.knockbackVelocity = 0
         this.knockbackDecay    = 0.75
         this._wasAirborne      = false
 
-        // ── Crouch (Layer 2) ────────────────────────────────
+        // ── Layer 2: Crouch ─────────────────────────────────
         this.isCrouching = false
 
-        // ── Dash (Layer 3) ──────────────────────────────────
-        this.dashFrames      = 0           // frames remaining in dash
-        this.dashCooldown    = 0           // prevent infinite dash spam
-        this.dashSpeed       = 14          // horizontal velocity during dash
-        this.dashDirection   = 0           // +1 forward / -1 back
-
-        // Double-tap detection
-        this._lastTapKey     = null
-        this._lastTapTime    = 0
-        this.TAP_WINDOW      = 220          // ms between taps to register dash
-
-        // ── Invincibility frames (backdash) ─────────────────
-        this.iframes         = 0
+        // ── Layer 3: Dash ───────────────────────────────────
+        this.dashFrames    = 0
+        this.dashCooldown  = 0
+        this.dashSpeed     = 14
+        this.dashDirection = 0
+        this._lastTapKey   = null
+        this._lastTapTime  = 0
+        this.iframes       = 0
 
         this.attackBox = {
             position: { x: this.position.x, y: this.position.y },
@@ -101,35 +96,38 @@ class Fighter extends Sprite {
         }
     }
 
-    // ── Public: try to dash in direction (+1 / -1) ───────────────
+    // ── Dash ─────────────────────────────────────────────────────
     tryDash(direction) {
         if (this.dashCooldown > 0 || this.dashFrames > 0 || this.dead) return
-        this.dashFrames   = 10
-        this.dashCooldown = 28
+        this.dashFrames    = 10
+        this.dashCooldown  = 28
         this.dashDirection = direction
-        // Backdash gets 6 iframes
-        if (direction === -1) this.iframes = 6
+        if (direction === -1) this.iframes = 6   // backdash iframes
         spawnDashTrail(this.position.x + this.width / 2, this.position.y + this.height / 2, direction)
     }
 
-    // ── attack1: light / airborne attack ─────────────────────────
+    // ── Attacks ──────────────────────────────────────────────────
     attack1() {
         if (this.isAttacking || this.dead) return
         this.switchSprite('attack1')
         this.isAttacking = true
     }
 
-    // ── attack2: heavy (grounded) or crouch attack ───────────────
     attack2() {
         if (this.isAttacking || this.dead) return
         this.switchSprite('attack2')
         this.isAttacking = true
     }
 
-    // ── takeHit with all Layer 1 effects ─────────────────────────
+    crouchAttack() {
+        if (this.isAttacking || this.dead) return
+        this.switchSprite('crouchAttack')
+        this.isAttacking = true
+    }
+
+    // ── Take hit ─────────────────────────────────────────────────
     takeHit(attackerX, isHeavy = false) {
-        // Invincibility frames from backdash
-        if (this.iframes > 0) return
+        if (this.iframes > 0) return    // backdash invincibility
 
         this.health -= isHeavy ? 25 : 20
         this.switchSprite('takeHit')
@@ -145,22 +143,22 @@ class Fighter extends Sprite {
         spawnHitParticles(hitX, hitY, isHeavy ? '#ffcc00' : '#ffffff', isHeavy ? 12 : 7)
     }
 
+    // ── Per-frame update ─────────────────────────────────────────
     update() {
         this.draw()
         if (!this.dead) this.animateFrames()
 
-        // ── Tick cooldowns ─────────────────────────────────
         if (this.dashCooldown > 0) this.dashCooldown--
         if (this.iframes > 0)      this.iframes--
 
-        // ── Dash override velocity ─────────────────────────
+        // Dash velocity override
         if (this.dashFrames > 0) {
             this.velocity.x = this.dashDirection * this.dashSpeed
             this.dashFrames--
             this.switchSprite('run')
         }
 
-        // ── Knockback ──────────────────────────────────────
+        // Knockback
         if (Math.abs(this.knockbackVelocity) > 0.1) {
             this.position.x   += this.knockbackVelocity
             this.knockbackVelocity *= this.knockbackDecay
@@ -168,12 +166,12 @@ class Fighter extends Sprite {
             this.knockbackVelocity = 0
         }
 
-        // ── Horizontal movement + canvas clamp ────────────
+        // Horizontal + canvas clamp
         this.position.x += this.velocity.x
-        if (this.position.x < 0)                       this.position.x = 0
-        if (this.position.x + this.width > 1024)       this.position.x = 1024 - this.width
+        if (this.position.x < 0)                 this.position.x = 0
+        if (this.position.x + this.width > 1024) this.position.x = 1024 - this.width
 
-        // ── Gravity & ground ───────────────────────────────
+        // Gravity + ground
         const wasAirborne = (this.position.y + this.height) < 576
         this.position.y  += this.velocity.y
         this.velocity.y  += gravity
@@ -190,27 +188,32 @@ class Fighter extends Sprite {
         }
         this._wasAirborne = (this.position.y + this.height) < 576
 
-        // ── Attack box ─────────────────────────────────────
+        // Attack box
         this.attackBox.position.x = this.position.x + this.attackBox.offset.x
         this.attackBox.position.y = this.position.y + this.attackBox.offset.y
     }
 
+    // ── Sprite state machine ─────────────────────────────────────
     switchSprite(sprite) {
+        // Death is terminal
         if (this.image === this.sprites.death.image) {
             if (this.framesCurrent === this.sprites.death.framesMax - 1) this.dead = true
             return
         }
 
+        // Don't interrupt mid-animation attacks or takeHit
+        const s = this.sprites
         if (
-            (this.image === this.sprites.attack1.image && this.framesCurrent < this.sprites.attack1.framesMax - 1) ||
-            (this.image === this.sprites.attack2.image && this.framesCurrent < this.sprites.attack2.framesMax - 1) ||
-            (this.image === this.sprites.takeHit.image && this.framesCurrent < this.sprites.takeHit.framesMax - 1)
+            (this.image === s.attack1.image      && this.framesCurrent < s.attack1.framesMax - 1)      ||
+            (this.image === s.attack2.image      && this.framesCurrent < s.attack2.framesMax - 1)      ||
+            (this.image === s.crouchAttack.image && this.framesCurrent < s.crouchAttack.framesMax - 1) ||
+            (this.image === s.takeHit.image      && this.framesCurrent < s.takeHit.framesMax - 1)
         ) return
 
-        const s = this.sprites[sprite]
-        if (!s || this.image === s.image) return
-        this.image         = s.image
-        this.framesMax     = s.framesMax
+        const target = this.sprites[sprite]
+        if (!target || this.image === target.image) return
+        this.image         = target.image
+        this.framesMax     = target.framesMax
         this.framesCurrent = 0
     }
 }
