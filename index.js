@@ -1,5 +1,5 @@
 const canvas = document.querySelector('canvas')
-const c = canvas.getContext('2d')
+const c      = canvas.getContext('2d')
 
 canvas.width  = 1024
 canvas.height = 576
@@ -8,12 +8,11 @@ c.fillRect(0, 0, canvas.width, canvas.height)
 
 const gravity = 0.7
 
-// ── Sprites ─────────────────────────────────────────────────────
+// ── Sprites ──────────────────────────────────────────────────────
 const background = new Sprite({
     position: { x: 0, y: 0 },
     imageSrc: './img/background.png'
 })
-
 const shop = new Sprite({
     position: { x: 615, y: 128 },
     imageSrc: './img/shop.png',
@@ -25,20 +24,19 @@ const shop = new Sprite({
 const player = new Fighter({
     position: { x: 0, y: 0 },
     velocity: { x: 0, y: 0 },
-    offset:   { x: 0, y: 0 },
+    offset:   { x: 215, y: 157 },
     imageSrc:  './img/samuraiMack/samuraiMack/Idle.png',
-    scale:     2.5,
+    scale: 2.5,
     framesMax: 8,
-    offset:    { x: 215, y: 157 },
     sprites: {
-        idle:    { imageSrc: './img/samuraiMack/samuraiMack/Idle.png',                       framesMax: 8 },
-        run:     { imageSrc: './img/samuraiMack/samuraiMack/Run.png',                        framesMax: 8 },
-        jump:    { imageSrc: './img/samuraiMack/samuraiMack/Jump.png',                       framesMax: 2 },
-        fall:    { imageSrc: './img/samuraiMack/samuraiMack/Fall.png',                       framesMax: 2 },
-        attack1: { imageSrc: './img/samuraiMack/samuraiMack/Attack1.png',                    framesMax: 6 },
-        attack2: { imageSrc: './img/samuraiMack/samuraiMack/Attack2.png',                    framesMax: 6 },
-        takeHit: { imageSrc: './img/samuraiMack/samuraiMack/Take Hit - white silhouette.png',framesMax: 4 },
-        death:   { imageSrc: './img/samuraiMack/samuraiMack/Death.png',                      framesMax: 6 }
+        idle:    { imageSrc: './img/samuraiMack/samuraiMack/Idle.png',                        framesMax: 8 },
+        run:     { imageSrc: './img/samuraiMack/samuraiMack/Run.png',                         framesMax: 8 },
+        jump:    { imageSrc: './img/samuraiMack/samuraiMack/Jump.png',                        framesMax: 2 },
+        fall:    { imageSrc: './img/samuraiMack/samuraiMack/Fall.png',                        framesMax: 2 },
+        attack1: { imageSrc: './img/samuraiMack/samuraiMack/Attack1.png',                     framesMax: 6 },
+        attack2: { imageSrc: './img/samuraiMack/samuraiMack/Attack2.png',                     framesMax: 6 },
+        takeHit: { imageSrc: './img/samuraiMack/samuraiMack/Take Hit - white silhouette.png', framesMax: 4 },
+        death:   { imageSrc: './img/samuraiMack/samuraiMack/Death.png',                       framesMax: 6 }
     },
     attackBox: { offset: { x: 100, y: 50 }, width: 160, height: 50 }
 })
@@ -49,43 +47,47 @@ const enemy = new Fighter({
     color:    'blue',
     offset:   { x: 215, y: 167 },
     imageSrc:  './img/kenji/kenji/Idle.png',
-    scale:     2.5,
+    scale: 2.5,
     framesMax: 4,
     sprites: {
-        idle:    { imageSrc: './img/kenji/kenji/Idle.png',   framesMax: 4 },
-        run:     { imageSrc: './img/kenji/kenji/Run.png',    framesMax: 8 },
-        jump:    { imageSrc: './img/kenji/kenji/Jump.png',   framesMax: 2 },
-        fall:    { imageSrc: './img/kenji/kenji/Fall.png',   framesMax: 2 },
-        attack1: { imageSrc: './img/kenji/kenji/Attack1.png',framesMax: 4 },
-        attack2: { imageSrc: './img/kenji/kenji/Attack2.png',framesMax: 4 },
+        idle:    { imageSrc: './img/kenji/kenji/Idle.png',    framesMax: 4 },
+        run:     { imageSrc: './img/kenji/kenji/Run.png',     framesMax: 8 },
+        jump:    { imageSrc: './img/kenji/kenji/Jump.png',    framesMax: 2 },
+        fall:    { imageSrc: './img/kenji/kenji/Fall.png',    framesMax: 2 },
+        attack1: { imageSrc: './img/kenji/kenji/Attack1.png', framesMax: 4 },
+        attack2: { imageSrc: './img/kenji/kenji/Attack2.png', framesMax: 4 },
         takeHit: { imageSrc: './img/kenji/kenji/Take hit.png',framesMax: 3 },
-        death:   { imageSrc: './img/kenji/kenji/Death.png',  framesMax: 7 }
+        death:   { imageSrc: './img/kenji/kenji/Death.png',   framesMax: 7 }
     },
     attackBox: { offset: { x: -170, y: 50 }, width: 170, height: 50 }
 })
 
-// ── Input state ──────────────────────────────────────────────────
+// ── Input ─────────────────────────────────────────────────────────
 const keys = {
     a:          { pressed: false },
     d:          { pressed: false },
-    w:          { pressed: false },
     ArrowRight: { pressed: false },
-    ArrowLeft:  { pressed: false },
-    ArrowUp:    { pressed: false }
+    ArrowLeft:  { pressed: false }
 }
 
-// ── Game state ───────────────────────────────────────────────────
+// Double-tap dash detection
+const doubleTap = {
+    player: { key: null, time: 0 },
+    enemy:  { key: null, time: 0 }
+}
+const DASH_WINDOW = 220   // ms
+
+// ── Game state ────────────────────────────────────────────────────
 let gameOver = false
 
 decreaseTimer()
 
-// ── Main loop ────────────────────────────────────────────────────
+// ── Main loop ─────────────────────────────────────────────────────
 function animate() {
     window.requestAnimationFrame(animate)
 
-    // Hit stop: freeze all game logic for N frames
+    // Hit stop: draw-only pass
     if (isHitStopped()) {
-        // Still need to draw — just don't update state
         c.fillStyle = 'black'
         c.fillRect(0, 0, canvas.width, canvas.height)
         background.draw()
@@ -99,7 +101,7 @@ function animate() {
         return
     }
 
-    // ── Draw background ──────────────────────────────────────────
+    // ── Background ───────────────────────────────────────
     c.fillStyle = 'black'
     c.fillRect(0, 0, canvas.width, canvas.height)
     background.update()
@@ -107,88 +109,109 @@ function animate() {
     c.fillStyle = 'rgba(255,255,255,0.15)'
     c.fillRect(0, 0, canvas.width, canvas.height)
 
-    // ── Update fighters ──────────────────────────────────────────
+    // ── Fighters ─────────────────────────────────────────
     player.update()
     enemy.update()
 
-    // ── Particles ────────────────────────────────────────────────
+    // ── Crouch indicators ────────────────────────────────
+    drawCrouchIndicator(c, player, 'P1')
+    drawCrouchIndicator(c, enemy,  'P2')
+
+    // ── Particles ────────────────────────────────────────
     updateParticles(c)
-
-    // ── Screen shake ─────────────────────────────────────────────
     applyShake(canvas)
-
-    // ── Combo tick ───────────────────────────────────────────────
     tickCombo()
 
     if (gameOver) return
 
-    // ── Player movement ──────────────────────────────────────────
+    // ════════════════════════════════════════════════════
+    // PLAYER MOVEMENT (Layer 2 + 3)
+    // ════════════════════════════════════════════════════
     player.velocity.x = 0
+
+    const playerOnGround = player.position.y + player.height >= 576
+
     if (keys.a.pressed && player.lastKey === 'a') {
         player.velocity.x = -5
-        player.switchSprite('run')
+        if (!player.isCrouching) player.switchSprite('run')
     } else if (keys.d.pressed && player.lastKey === 'd') {
         player.velocity.x = 5
-        player.switchSprite('run')
+        if (!player.isCrouching) player.switchSprite('run')
     } else {
-        player.switchSprite('idle')
+        if (!player.isCrouching) player.switchSprite('idle')
     }
 
+    // Airborne animation
     if (player.velocity.y < 0)      player.switchSprite('jump')
     else if (player.velocity.y > 0) player.switchSprite('fall')
 
-    // ── Enemy movement ───────────────────────────────────────────
+    // ════════════════════════════════════════════════════
+    // ENEMY MOVEMENT
+    // ════════════════════════════════════════════════════
     enemy.velocity.x = 0
+
     if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
         enemy.velocity.x = -5
-        enemy.switchSprite('run')
+        if (!enemy.isCrouching) enemy.switchSprite('run')
     } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
         enemy.velocity.x = 5
-        enemy.switchSprite('run')
+        if (!enemy.isCrouching) enemy.switchSprite('run')
     } else {
-        enemy.switchSprite('idle')
+        if (!enemy.isCrouching) enemy.switchSprite('idle')
     }
 
     if (enemy.velocity.y < 0)      enemy.switchSprite('jump')
     else if (enemy.velocity.y > 0) enemy.switchSprite('fall')
 
-    // ── Collision: player hits enemy ─────────────────────────────
+    // ════════════════════════════════════════════════════
+    // LAYER 3: Push-apart separation
+    // ════════════════════════════════════════════════════
+    separateFighters(player, enemy)
+
+    // ════════════════════════════════════════════════════
+    // LAYER 2: Crouch scale — squish fighter visually
+    // ════════════════════════════════════════════════════
+    // (Crouch is purely a state flag — attack2 while crouching = low attack)
+
+    // ════════════════════════════════════════════════════
+    // HIT DETECTION
+    // ════════════════════════════════════════════════════
+
+    // Player hits enemy
     if (
         rectangularCollision({ rectangle1: player, rectangle2: enemy }) &&
         player.isAttacking &&
         player.framesCurrent === 4
     ) {
-        const isHeavy = player.image === player.sprites.attack2.image
-        enemy.takeHit(player.position.x, isHeavy)
+        const isHeavy    = player.image === player.sprites.attack2.image
+        const isAirborne = player._wasAirborne
+        enemy.takeHit(player.position.x, isHeavy && !isAirborne)
         player.isAttacking = false
         registerHit('player')
         gsap.to('#enemyHealth', { width: enemy.health + '%' })
     }
-
-    // Player attack misses
     if (player.isAttacking && player.framesCurrent === 4) {
         player.isAttacking = false
     }
 
-    // ── Collision: enemy hits player ─────────────────────────────
+    // Enemy hits player
     if (
         rectangularCollision({ rectangle1: enemy, rectangle2: player }) &&
         enemy.isAttacking &&
         enemy.framesCurrent === 2
     ) {
-        const isHeavy = enemy.image === enemy.sprites.attack2.image
-        player.takeHit(enemy.position.x, isHeavy)
+        const isHeavy    = enemy.image === enemy.sprites.attack2.image
+        const isAirborne = enemy._wasAirborne
+        player.takeHit(enemy.position.x, isHeavy && !isAirborne)
         enemy.isAttacking = false
         registerHit('enemy')
         gsap.to('#playerHealth', { width: player.health + '%' })
     }
-
-    // Enemy attack misses
     if (enemy.isAttacking && enemy.framesCurrent === 2) {
         enemy.isAttacking = false
     }
 
-    // ── End condition ────────────────────────────────────────────
+    // End condition
     if (enemy.health <= 0 || player.health <= 0) {
         gameOver = true
         determineWinner({ player, enemy, timerId })
@@ -197,38 +220,115 @@ function animate() {
 
 animate()
 
-// ── Key listeners ────────────────────────────────────────────────
+// ── Key down ──────────────────────────────────────────────────────
 window.addEventListener('keydown', (event) => {
+
+    // ── Player 1 ─────────────────────────────────────────
     if (!player.dead) {
         switch (event.key) {
-            case 'd': keys.d.pressed = true; player.lastKey = 'd'; break
-            case 'a': keys.a.pressed = true; player.lastKey = 'a'; break
-            case 'w': player.velocity.y = -20; break
-            case ' ': player.attack1(); break
-            case 's': player.attack2(); break
+            case 'd':
+                // Double-tap dash right
+                if (doubleTap.player.key === 'd' && Date.now() - doubleTap.player.time < DASH_WINDOW) {
+                    player.tryDash(1)
+                    doubleTap.player.key = null
+                } else {
+                    doubleTap.player = { key: 'd', time: Date.now() }
+                }
+                keys.d.pressed  = true
+                player.lastKey  = 'd'
+                break
+
+            case 'a':
+                // Double-tap dash left (backdash → iframes)
+                if (doubleTap.player.key === 'a' && Date.now() - doubleTap.player.time < DASH_WINDOW) {
+                    player.tryDash(-1)
+                    doubleTap.player.key = null
+                } else {
+                    doubleTap.player = { key: 'a', time: Date.now() }
+                }
+                keys.a.pressed  = true
+                player.lastKey  = 'a'
+                break
+
+            case 'w':
+                // No jump while crouching
+                if (!player.isCrouching) player.velocity.y = -20
+                break
+
+            case 's':
+                // Crouch
+                player.isCrouching = true
+                break
+
+            case ' ':
+                // Light attack — works airborne too
+                player.attack1()
+                break
+
+            case 'f':
+                // Heavy / crouch attack
+                player.attack2()
+                break
         }
     }
 
+    // ── Player 2 ─────────────────────────────────────────
     if (!enemy.dead) {
         switch (event.key) {
-            case 'ArrowRight': keys.ArrowRight.pressed = true; enemy.lastKey = 'ArrowRight'; break
-            case 'ArrowLeft':  keys.ArrowLeft.pressed  = true; enemy.lastKey = 'ArrowLeft';  break
-            case 'ArrowUp':    enemy.velocity.y = -20; break
-            case 'ArrowDown':  enemy.attack1(); break
-            case 'Shift':      enemy.attack2(); break
+            case 'ArrowRight':
+                if (doubleTap.enemy.key === 'ArrowRight' && Date.now() - doubleTap.enemy.time < DASH_WINDOW) {
+                    enemy.tryDash(1)
+                    doubleTap.enemy.key = null
+                } else {
+                    doubleTap.enemy = { key: 'ArrowRight', time: Date.now() }
+                }
+                keys.ArrowRight.pressed = true
+                enemy.lastKey           = 'ArrowRight'
+                break
+
+            case 'ArrowLeft':
+                if (doubleTap.enemy.key === 'ArrowLeft' && Date.now() - doubleTap.enemy.time < DASH_WINDOW) {
+                    enemy.tryDash(-1)
+                    doubleTap.enemy.key = null
+                } else {
+                    doubleTap.enemy = { key: 'ArrowLeft', time: Date.now() }
+                }
+                keys.ArrowLeft.pressed = true
+                enemy.lastKey          = 'ArrowLeft'
+                break
+
+            case 'ArrowUp':
+                if (!enemy.isCrouching) enemy.velocity.y = -20
+                break
+
+            case 'ArrowDown':
+                // Crouch
+                enemy.isCrouching = true
+                break
+
+            case 'l':
+                // Light attack
+                enemy.attack1()
+                break
+
+            case ';':
+                // Heavy / crouch attack
+                enemy.attack2()
+                break
         }
     }
 })
 
+// ── Key up ────────────────────────────────────────────────────────
 window.addEventListener('keyup', (event) => {
     switch (event.key) {
         case 'd': keys.d.pressed = false; break
         case 'a': keys.a.pressed = false; break
-        case 'w': keys.w.pressed = false; break
+        case 's': player.isCrouching = false; break   // release crouch
     }
     switch (event.key) {
-        case 'ArrowRight': keys.ArrowRight.pressed = false; break
-        case 'ArrowLeft':  keys.ArrowLeft.pressed  = false; break
-        case 'ArrowUp':    keys.ArrowUp.pressed    = false; break
+        case 'ArrowRight': keys.ArrowRight.pressed = false;   break
+        case 'ArrowLeft':  keys.ArrowLeft.pressed  = false;   break
+        case 'ArrowDown':  enemy.isCrouching       = false;   break   // release crouch
     }
 })

@@ -7,12 +7,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Press Start 2P', cursive;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; font-family: 'Press Start 2P', cursive; margin: 0; padding: 0; }
 
         body {
             background: #0a0a0a;
@@ -25,349 +20,266 @@
         }
 
         /* ── Game wrapper ── */
-        #gameWrapper {
-            position: relative;
-            display: inline-block;
-        }
+        #gameWrapper { position: relative; display: inline-block; }
+        canvas { display: block; transition: transform 0.016s linear; }
 
-        canvas {
-            display: block;
-            transition: transform 0.016s linear;
-        }
-
-        /* ── HUD overlay ── */
+        /* ── HUD ── */
         #hud {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            display: flex;
-            align-items: center;
-            padding: 20px;
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; align-items: center; padding: 20px;
             pointer-events: none;
         }
-
-        /* Health bars */
-        .health-container {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-        }
-        .health-bg {
-            background-color: #3a0000;
-            height: 30px;
-            width: 100%;
-            border: 3px solid #111;
-        }
+        .health-container { position: relative; width: 100%; display: flex; justify-content: flex-end; }
+        .health-bg { background-color: #3a0000; height: 30px; width: 100%; border: 3px solid #111; }
         .health-bar {
-            position: absolute;
-            top: 0; right: 0; bottom: 0;
-            width: 100%;
+            position: absolute; top: 0; right: 0; bottom: 0; width: 100%;
             transition: width 0.3s ease;
-            border-top: 4px solid white;
-            border-left: 4px solid white;
-            border-bottom: 4px solid white;
+            border-top: 4px solid white; border-left: 4px solid white; border-bottom: 4px solid white;
         }
         #playerHealth { background: #818CF8; }
         #enemyHealth  { background: #f87171; border-left: none; border-right: 4px solid white; }
-
-        .enemy-health-container {
-            position: relative;
-            width: 100%;
-        }
-
-        /* Timer */
+        .enemy-health-container { position: relative; width: 100%; }
         #timer {
-            background-color: black;
-            height: 50px;
-            width: 100px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            border: 4px solid white;
-            font-size: 1.2rem;
+            background-color: black; height: 50px; width: 100px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; border: 4px solid white; font-size: 1.2rem;
         }
 
-        /* Combo counters */
+        /* ── Combo ── */
         #playerCombo, #enemyCombo {
-            position: absolute;
-            top: 60px;
-            font-size: 0.55rem;
-            color: #ffcc00;
+            position: absolute; top: 60px;
+            font-size: 0.55rem; color: #ffcc00;
             text-shadow: 0 0 8px #ffaa00, 0 0 16px #ff8800;
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.12s;
-            pointer-events: none;
-            letter-spacing: 0.1em;
-            white-space: nowrap;
+            opacity: 0; transition: opacity 0.2s, transform 0.12s;
+            pointer-events: none; letter-spacing: 0.1em; white-space: nowrap;
         }
         #playerCombo { left: 20px; }
         #enemyCombo  { right: 20px; text-align: right; }
 
-        /* Win/Tie text */
+        /* ── Win text ── */
         #displayText {
-            position: absolute;
-            color: white;
-            display: none;
-            align-items: center;
-            justify-content: center;
+            position: absolute; color: white; display: none;
+            align-items: center; justify-content: center;
             top: 0; right: 0; bottom: 0; left: 0;
             font-size: 1.4rem;
             text-shadow: 0 0 20px #fff, 0 0 40px #aaa;
-            background: rgba(0,0,0,0.45);
-            letter-spacing: 0.08em;
+            background: rgba(0,0,0,0.45); letter-spacing: 0.08em;
         }
 
-        /* ── How To Play overlay ── */
+        /* ════════════════════════════════════════════════
+           HOW TO PLAY OVERLAY
+        ════════════════════════════════════════════════ */
         #howToPlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.92);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.94);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; overflow-y: auto; padding: 20px 0;
         }
-
         #howToPlay .modal {
-            max-width: 860px;
-            width: 95%;
-            background: #0d0d1a;
-            border: 2px solid #3a3a6a;
-            border-radius: 4px;
-            padding: 40px 48px;
-            color: #ddd;
+            max-width: 900px; width: 95%;
+            background: #0d0d1a; border: 2px solid #3a3a6a; border-radius: 4px;
+            padding: 36px 44px; color: #ddd;
         }
-
         #howToPlay h1 {
-            font-size: 0.9rem;
-            color: #ffcc00;
-            text-align: center;
-            letter-spacing: 0.2em;
-            margin-bottom: 8px;
+            font-size: 0.85rem; color: #ffcc00; text-align: center;
+            letter-spacing: 0.2em; margin-bottom: 6px;
         }
-        #howToPlay .subtitle {
-            text-align: center;
-            font-size: 0.45rem;
-            color: #556;
-            letter-spacing: 0.15em;
-            margin-bottom: 36px;
+        .subtitle {
+            text-align: center; font-size: 0.42rem; color: #445;
+            letter-spacing: 0.15em; margin-bottom: 30px;
         }
 
-        .fighters-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-bottom: 32px;
-        }
-
-        .fighter-card {
-            background: #12122a;
-            border: 1px solid #2a2a4a;
-            border-radius: 4px;
-            padding: 24px 20px;
-        }
-
-        .fighter-card h2 {
-            font-size: 0.6rem;
-            margin-bottom: 20px;
-            letter-spacing: 0.15em;
-        }
+        /* Fighter cards */
+        .fighters-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        .fighter-card { background: #12122a; border: 1px solid #2a2a4a; border-radius: 4px; padding: 20px 18px; }
+        .fighter-card h2 { font-size: 0.55rem; margin-bottom: 16px; letter-spacing: 0.12em; }
         .p1-title { color: #818CF8; }
         .p2-title { color: #f87171; }
 
-        .controls-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        .controls-table { width: 100%; border-collapse: collapse; }
         .controls-table tr { border-bottom: 1px solid #1a1a3a; }
-        .controls-table td {
-            padding: 8px 4px;
-            font-size: 0.42rem;
-            line-height: 1.8;
-            vertical-align: middle;
-        }
+        .controls-table td { padding: 7px 3px; font-size: 0.38rem; line-height: 1.9; vertical-align: middle; }
         .key {
-            display: inline-block;
-            background: #1e1e3e;
-            border: 1px solid #4a4a7a;
-            border-bottom: 3px solid #4a4a7a;
-            border-radius: 3px;
-            padding: 3px 8px;
-            color: #aac;
-            font-size: 0.4rem;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
+            display: inline-block; background: #1e1e3e; border: 1px solid #4a4a7a;
+            border-bottom: 3px solid #4a4a7a; border-radius: 3px;
+            padding: 2px 7px; color: #aac; font-size: 0.36rem; white-space: nowrap;
         }
-        .action-label { color: #8899bb; padding-left: 12px; }
-        .action-heavy { color: #ffcc00; }
-        .action-special { color: #ff88cc; }
+        .action-label   { color: #8899bb; padding-left: 10px; }
+        .action-heavy   { color: #ffcc00; }
+        .action-dash    { color: #88ddff; }
+        .action-crouch  { color: #aaffaa; }
 
-        /* Tips section */
-        .tips {
-            background: #0a0a1a;
-            border: 1px solid #1a1a3a;
-            border-radius: 4px;
-            padding: 16px 20px;
-            margin-bottom: 28px;
+        /* Section divider */
+        .section-label {
+            font-size: 0.38rem; letter-spacing: 0.25em; color: #334;
+            margin: 20px 0 12px; text-transform: uppercase;
         }
-        .tips h3 {
-            font-size: 0.45rem;
-            color: #556;
-            letter-spacing: 0.2em;
-            margin-bottom: 14px;
+
+        /* Mechanics grid */
+        .mechanics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .mechanic-card {
+            background: #0a0a1e; border: 1px solid #1e1e3e; border-radius: 4px;
+            padding: 14px 12px;
         }
-        .tips ul {
-            list-style: none;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px 24px;
-        }
-        .tips li {
-            font-size: 0.38rem;
-            color: #7788aa;
-            line-height: 1.7;
-        }
-        .tips li::before { content: '▶ '; color: #3a4a6a; }
+        .mechanic-icon { font-size: 1.1rem; margin-bottom: 8px; display: block; }
+        .mechanic-title { font-size: 0.38rem; color: #ffcc00; margin-bottom: 6px; letter-spacing: 0.1em; }
+        .mechanic-desc  { font-size: 0.32rem; color: #667; line-height: 1.8; }
+
+        /* Tips */
+        .tips { background: #090914; border: 1px solid #191928; border-radius: 4px; padding: 14px 18px; margin-bottom: 24px; }
+        .tips h3 { font-size: 0.38rem; color: #445; letter-spacing: 0.2em; margin-bottom: 12px; }
+        .tips ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 7px 20px; }
+        .tips li { font-size: 0.33rem; color: #6677aa; line-height: 1.7; }
+        .tips li::before { content: '▶ '; color: #2a3a5a; }
 
         /* Start button */
         #startBtn {
-            display: block;
-            margin: 0 auto;
-            background: none;
-            border: 2px solid #ffcc00;
-            color: #ffcc00;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.55rem;
-            padding: 14px 40px;
-            cursor: pointer;
-            letter-spacing: 0.2em;
+            display: block; margin: 0 auto;
+            background: none; border: 2px solid #ffcc00; color: #ffcc00;
+            font-family: 'Press Start 2P', cursive; font-size: 0.5rem;
+            padding: 14px 40px; cursor: pointer; letter-spacing: 0.2em;
             transition: background 0.2s, color 0.2s;
         }
-        #startBtn:hover {
-            background: #ffcc00;
-            color: #000;
-        }
+        #startBtn:hover { background: #ffcc00; color: #000; }
 
-        /* Blink animation */
-        @keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .blink { animation: blink 1.2s ease-in-out infinite; }
     </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════════
-     HOW TO PLAY OVERLAY
-══════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════
+     HOW TO PLAY
+════════════════════════════════════════════════════════════ -->
 <div id="howToPlay">
-    <div class="modal">
-        <h1>⚔ THE FIGHTING GAME ⚔</h1>
-        <div class="subtitle">2-PLAYER LOCAL · FIRST TO ZERO LOSES</div>
+  <div class="modal">
+    <h1>⚔ THE FIGHTING GAME ⚔</h1>
+    <div class="subtitle">2-PLAYER LOCAL · LAST ONE STANDING WINS</div>
 
-        <div class="fighters-grid">
+    <!-- ── Fighter controls ── -->
+    <div class="fighters-grid">
 
-            <!-- Player 1 -->
-            <div class="fighter-card">
-                <h2 class="p1-title">◈ SAMURAI MACK — P1</h2>
-                <table class="controls-table">
-                    <tr>
-                        <td><span class="key">A</span> <span class="key">D</span></td>
-                        <td class="action-label">Move Left / Right</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">W</span></td>
-                        <td class="action-label">Jump</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">SPACE</span></td>
-                        <td class="action-label">Light Attack</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">S</span></td>
-                        <td class="action-label action-heavy">Heavy Attack ★</td>
-                    </tr>
-                </table>
-            </div>
+      <div class="fighter-card">
+        <h2 class="p1-title">◈ SAMURAI MACK — P1</h2>
+        <table class="controls-table">
+          <tr><td><span class="key">A</span> <span class="key">D</span></td>
+              <td class="action-label">Move</td></tr>
+          <tr><td><span class="key">W</span></td>
+              <td class="action-label">Jump</td></tr>
+          <tr><td><span class="key">S</span> (hold)</td>
+              <td class="action-label action-crouch">Crouch</td></tr>
+          <tr><td><span class="key">A</span><span class="key">A</span> / <span class="key">D</span><span class="key">D</span></td>
+              <td class="action-label action-dash">Dash (double-tap)</td></tr>
+          <tr><td><span class="key">SPACE</span></td>
+              <td class="action-label">Light Attack</td></tr>
+          <tr><td><span class="key">F</span></td>
+              <td class="action-label action-heavy">Heavy Attack ★</td></tr>
+          <tr><td><span class="key">S</span> + <span class="key">F</span></td>
+              <td class="action-label action-crouch">Crouch Attack (low)</td></tr>
+          <tr><td><span class="key">W</span> + <span class="key">SPACE</span></td>
+              <td class="action-label">Jump Attack</td></tr>
+        </table>
+      </div>
 
-            <!-- Player 2 -->
-            <div class="fighter-card">
-                <h2 class="p2-title">◈ KENJI — P2</h2>
-                <table class="controls-table">
-                    <tr>
-                        <td><span class="key">←</span> <span class="key">→</span></td>
-                        <td class="action-label">Move Left / Right</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">↑</span></td>
-                        <td class="action-label">Jump</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">↓</span></td>
-                        <td class="action-label">Light Attack</td>
-                    </tr>
-                    <tr>
-                        <td><span class="key">SHIFT</span></td>
-                        <td class="action-label action-heavy">Heavy Attack ★</td>
-                    </tr>
-                </table>
-            </div>
+      <div class="fighter-card">
+        <h2 class="p2-title">◈ KENJI — P2</h2>
+        <table class="controls-table">
+          <tr><td><span class="key">←</span> <span class="key">→</span></td>
+              <td class="action-label">Move</td></tr>
+          <tr><td><span class="key">↑</span></td>
+              <td class="action-label">Jump</td></tr>
+          <tr><td><span class="key">↓</span> (hold)</td>
+              <td class="action-label action-crouch">Crouch</td></tr>
+          <tr><td><span class="key">←</span><span class="key">←</span> / <span class="key">→</span><span class="key">→</span></td>
+              <td class="action-label action-dash">Dash (double-tap)</td></tr>
+          <tr><td><span class="key">L</span></td>
+              <td class="action-label">Light Attack</td></tr>
+          <tr><td><span class="key">;</span></td>
+              <td class="action-label action-heavy">Heavy Attack ★</td></tr>
+          <tr><td><span class="key">↓</span> + <span class="key">;</span></td>
+              <td class="action-label action-crouch">Crouch Attack (low)</td></tr>
+          <tr><td><span class="key">↑</span> + <span class="key">L</span></td>
+              <td class="action-label">Jump Attack</td></tr>
+        </table>
+      </div>
 
-        </div><!-- /fighters-grid -->
-
-        <!-- Tips -->
-        <div class="tips">
-            <h3>TIPS &amp; MECHANICS</h3>
-            <ul>
-                <li>Heavy Attack deals more damage &amp; launches</li>
-                <li>Hits cause knockback — use it to corner</li>
-                <li>Jump over attacks to reposition</li>
-                <li>Watch the combo counter — chain hits</li>
-                <li>Timer runs out → lower HP wins</li>
-                <li>Landing from a jump kicks up dust</li>
-            </ul>
-        </div>
-
-        <button id="startBtn" class="blink">PRESS TO FIGHT</button>
     </div>
+
+    <!-- ── New mechanics ── -->
+    <div class="section-label">NEW MECHANICS</div>
+    <div class="mechanics-grid">
+      <div class="mechanic-card">
+        <span class="mechanic-icon">💨</span>
+        <div class="mechanic-title">DASH</div>
+        <div class="mechanic-desc">Double-tap a direction to burst forward. Backdash grants brief invincibility frames — use it to escape pressure.</div>
+      </div>
+      <div class="mechanic-card">
+        <span class="mechanic-icon">🦵</span>
+        <div class="mechanic-title">CROUCH ATTACK</div>
+        <div class="mechanic-desc">Hold crouch then press Heavy to throw a low attack. Hits opponents who expect standing combos.</div>
+      </div>
+      <div class="mechanic-card">
+        <span class="mechanic-icon">🌀</span>
+        <div class="mechanic-title">JUMP ATTACK</div>
+        <div class="mechanic-desc">Jump and press Light in the air for an aerial strike. Harder to block — use it to open up defensive opponents.</div>
+      </div>
+      <div class="mechanic-card">
+        <span class="mechanic-icon">💥</span>
+        <div class="mechanic-title">HIT STOP</div>
+        <div class="mechanic-desc">Every landed hit freezes both fighters for a few frames. Heavy hits freeze longer — that pause is intentional.</div>
+      </div>
+      <div class="mechanic-card">
+        <span class="mechanic-icon">🔥</span>
+        <div class="mechanic-title">COMBO COUNTER</div>
+        <div class="mechanic-desc">Land hits within 2 seconds to build a combo chain. Counter appears above the attacker. Resets on timeout.</div>
+      </div>
+      <div class="mechanic-card">
+        <span class="mechanic-icon">🛡️</span>
+        <div class="mechanic-title">PUSH-APART</div>
+        <div class="mechanic-desc">Fighters can't overlap — they push each other. Use this to corner your opponent against the wall.</div>
+      </div>
+    </div>
+
+    <!-- ── Tips ── -->
+    <div class="tips">
+      <h3>TIPS</h3>
+      <ul>
+        <li>Heavy ★ deals 25 dmg, Light deals 20</li>
+        <li>Backdash iframes beat meaty attacks</li>
+        <li>Corner pressure is real — use push-apart</li>
+        <li>Jump attacks beat grounded heavies</li>
+        <li>Crouch attacks punish high-attack spammers</li>
+        <li>Timer runs out → lower HP wins</li>
+        <li>Gold particles = heavy hit landed</li>
+        <li>Landing from jump kicks up dust</li>
+      </ul>
+    </div>
+
+    <button id="startBtn" class="blink">▶ PRESS TO FIGHT</button>
+  </div>
 </div>
 
-
-<!-- ══════════════════════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════════════
      GAME
-══════════════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════════ -->
 <div id="gameWrapper">
-
-    <!-- HUD -->
-    <div id="hud">
-        <!-- P1 health -->
-        <div class="health-container">
-            <div class="health-bg"></div>
-            <div id="playerHealth" class="health-bar"></div>
-        </div>
-
-        <!-- Timer -->
-        <div id="timer">100</div>
-
-        <!-- P2 health -->
-        <div class="enemy-health-container">
-            <div class="health-bg" style="background:#3a0000"></div>
-            <div id="enemyHealth" class="health-bar" style="left:0;right:auto;border-left:none;border-right:4px solid white;"></div>
-        </div>
+  <div id="hud">
+    <div class="health-container">
+      <div class="health-bg"></div>
+      <div id="playerHealth" class="health-bar"></div>
     </div>
+    <div id="timer">100</div>
+    <div class="enemy-health-container">
+      <div class="health-bg"></div>
+      <div id="enemyHealth" class="health-bar" style="left:0;right:auto;border-left:none;border-right:4px solid white;"></div>
+    </div>
+  </div>
 
-    <!-- Combo counters -->
-    <div id="playerCombo"></div>
-    <div id="enemyCombo"></div>
-
-    <!-- Win / Tie text -->
-    <div id="displayText">Tie</div>
-
-    <!-- Canvas -->
-    <canvas></canvas>
-
-</div><!-- /gameWrapper -->
-
+  <div id="playerCombo"></div>
+  <div id="enemyCombo"></div>
+  <div id="displayText">Tie</div>
+  <canvas></canvas>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js"
         integrity="sha512-gmwBmiTVER57N3jYS3LinA9eb8aHrJua5iQD7yqYCKa5x6Jjc7VDVaEA0je0Lu0bP9j7tEjV3+1qUm6loO99Kw=="
@@ -377,21 +289,15 @@
 <script src="index.js"></script>
 
 <script>
-    // Dismiss how-to-play on click or any key
-    const overlay  = document.getElementById('howToPlay')
-    const startBtn = document.getElementById('startBtn')
-
-    function dismissOverlay() {
-        overlay.style.opacity = '0'
-        overlay.style.transition = 'opacity 0.4s'
-        setTimeout(() => { overlay.style.display = 'none' }, 400)
-    }
-
-    startBtn.addEventListener('click', dismissOverlay)
-    window.addEventListener('keydown', function onFirst() {
-        dismissOverlay()
-        window.removeEventListener('keydown', onFirst)
-    }, { once: false })
+  const overlay  = document.getElementById('howToPlay')
+  const startBtn = document.getElementById('startBtn')
+  function dismissOverlay() {
+    overlay.style.opacity    = '0'
+    overlay.style.transition = 'opacity 0.4s'
+    setTimeout(() => { overlay.style.display = 'none' }, 400)
+  }
+  startBtn.addEventListener('click', dismissOverlay)
+  window.addEventListener('keydown', dismissOverlay, { once: true })
 </script>
 
 </body>
