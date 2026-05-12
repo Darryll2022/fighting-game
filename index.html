@@ -57,14 +57,46 @@
         #enemyCombo  { right: 20px; text-align: right; }
 
         /* ── Win text ── */
+        /* ── End Screen ── */
         #displayText {
-            position: absolute; color: white; display: none;
-            align-items: center; justify-content: center;
+            position: absolute; display: none; flex-direction: column;
+            align-items: center; justify-content: center; gap: 28px;
             top: 0; right: 0; bottom: 0; left: 0;
-            font-size: 1.4rem;
-            text-shadow: 0 0 20px #fff, 0 0 40px #aaa;
-            background: rgba(0,0,0,0.45); letter-spacing: 0.08em;
+            background: rgba(0,0,0,0.78);
+            z-index: 20;
         }
+        #displayText .end-title {
+            font-size: 1.3rem; color: #fff; letter-spacing: 0.12em;
+            text-shadow: 0 0 24px #fff, 0 0 48px rgba(200,200,255,0.6);
+            animation: endPulse 1.4s ease-in-out infinite alternate;
+        }
+        #displayText .end-title.p1-win  { color: #818CF8; text-shadow: 0 0 24px #818CF8, 0 0 48px #4f46e5; }
+        #displayText .end-title.p2-win  { color: #f87171; text-shadow: 0 0 24px #f87171, 0 0 48px #dc2626; }
+        #displayText .end-title.tie     { color: #ffcc00; text-shadow: 0 0 24px #ffcc00, 0 0 48px #b45309; }
+        @keyframes endPulse {
+            from { transform: scale(1);    opacity: 1; }
+            to   { transform: scale(1.04); opacity: 0.85; }
+        }
+        .end-buttons { display: flex; gap: 16px; }
+        .end-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem; letter-spacing: 0.12em;
+            padding: 14px 22px; cursor: pointer;
+            border-radius: 3px; border: 2px solid;
+            transition: transform 0.1s, box-shadow 0.1s;
+            outline: none;
+        }
+        .end-btn:hover  { transform: scale(1.06); }
+        .end-btn:active { transform: scale(0.97); }
+        .end-btn.retry {
+            background: #818CF8; border-color: #a5b4fc; color: #0a0a1a;
+            box-shadow: 0 0 14px rgba(129,140,248,0.5);
+        }
+        .end-btn.retry:hover { box-shadow: 0 0 22px rgba(129,140,248,0.9); }
+        .end-btn.home {
+            background: transparent; border-color: #4a4a7a; color: #8899bb;
+        }
+        .end-btn.home:hover { border-color: #818CF8; color: #c7d2fe; }
 
         /* ════════════════════════════════════════════════
            HOW TO PLAY OVERLAY
@@ -277,7 +309,13 @@
 
   <div id="playerCombo"></div>
   <div id="enemyCombo"></div>
-  <div id="displayText">Tie</div>
+  <div id="displayText">
+    <div class="end-title" id="endTitle">TIE</div>
+    <div class="end-buttons">
+      <button class="end-btn retry" onclick="retryGame()">&#9654; FIGHT AGAIN</button>
+      <button class="end-btn home"  onclick="goHome()">&#8962; HOME</button>
+    </div>
+  </div>
   <canvas></canvas>
 </div>
 
@@ -312,6 +350,19 @@
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === 'Escape') dismissOverlay()
   })
+
+  // ─── End Screen actions ─────────────────────────────────────────
+  function retryGame() {
+    // Full page reload — cleanest way to reset all state
+    window.location.reload()
+  }
+
+  function goHome() {
+    // In the portfolio this would be history.back() or a specific URL.
+    // For standalone, just reload to the intro screen.
+    window.location.reload()
+  }
+
 </script>
 
 </body>

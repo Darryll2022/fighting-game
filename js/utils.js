@@ -34,14 +34,20 @@ function separateFighters(a, b) {
 // ─── Win / Tie ────────────────────────────────────────────────────
 function determineWinner({ player, enemy, timerId }) {
     clearTimeout(timerId)
-    const el = document.querySelector('#displayText')
-    el.style.display = 'flex'
+    const overlay = document.querySelector('#displayText')
+    const title   = document.querySelector('#endTitle')
+    overlay.style.display = 'flex'
+    title.className = 'end-title'
+
     if (player.health === enemy.health) {
-        el.innerHTML = 'TIE'
+        title.textContent = 'DRAW'
+        title.classList.add('tie')
     } else if (player.health > enemy.health) {
-        el.innerHTML = 'PLAYER 1 WINS'
+        title.textContent = 'PLAYER 1 WINS'
+        title.classList.add('p1-win')
     } else {
-        el.innerHTML = 'PLAYER 2 WINS'
+        title.textContent = 'PLAYER 2 WINS'
+        title.classList.add('p2-win')
     }
 }
 
