@@ -162,10 +162,13 @@ const enemy = new Fighter({
  },
  
 })
+const playerHealthBar = document.querySelector('#playerHealth')
+const enemyHealthBar = document.querySelector('#enemyHealth')
 
+playerHealthBar.setAttribute('aria-valuenow', player.health)
+enemyHealthBar.setAttribute('aria-valuenow', enemy.health)
 
-
- console.log(player)
+const blockedKeys = new Set([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
 
 const keys = {
     a: {
@@ -260,6 +263,7 @@ decreaseTimer()
         gsap.to('#enemyHealth', {
             width: enemy.health + '%'
         })
+        enemyHealthBar.setAttribute('aria-valuenow', enemy.health)
     }
 
     //if player misses
@@ -285,6 +289,7 @@ decreaseTimer()
             gsap.to('#playerHealth', {
                 width: player.health + '%'
             })
+            playerHealthBar.setAttribute('aria-valuenow', player.health)
     }
 
     //if enemy misses
@@ -303,6 +308,9 @@ decreaseTimer()
  animate()
 
  window.addEventListener('keydown', (event) => {
+    if (blockedKeys.has(event.key)) {
+        event.preventDefault()
+    }
     if(!player.dead){
 
     switch (event.key) {
@@ -351,6 +359,9 @@ decreaseTimer()
 
 
  window.addEventListener('keyup', (event) => {
+    if (blockedKeys.has(event.key)) {
+        event.preventDefault()
+    }
     switch (event.key) {
         case 'd' :
         keys.d.pressed = false
