@@ -37,6 +37,40 @@
             max-width: 100%;
             height: auto;
         }
+        #mobileControls {
+            width: 100%;
+            max-width: 1024px;
+            display: none;
+            justify-content: space-between;
+            gap: 12px;
+            touch-action: none;
+            user-select: none;
+        }
+        .controlGroup {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .controlButton {
+            min-width: 64px;
+            min-height: 44px;
+            border: 2px solid #fff;
+            background: #1f2937;
+            color: #fff;
+            font-size: 10px;
+            padding: 10px 8px;
+            border-radius: 8px;
+            touch-action: none;
+        }
+        .controlButton:active {
+            background: #374151;
+        }
+        @media (hover: none) and (pointer: coarse) {
+            #mobileControls {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
@@ -118,6 +152,20 @@
         left: 0; 
         display: none; ">Tie</div>
         <canvas aria-label="2D fighting game arena">Your browser does not support canvas.</canvas>
+    </div>
+    <div id="mobileControls" aria-label="Touch controls">
+        <div class="controlGroup" aria-label="Player 1 touch controls">
+            <button type="button" class="controlButton" data-control="p1-left">P1 Left</button>
+            <button type="button" class="controlButton" data-control="p1-right">P1 Right</button>
+            <button type="button" class="controlButton" data-control="p1-jump">P1 Jump</button>
+            <button type="button" class="controlButton" data-control="p1-attack">P1 Attack</button>
+        </div>
+        <div class="controlGroup" aria-label="Player 2 touch controls">
+            <button type="button" class="controlButton" data-control="p2-left">P2 Left</button>
+            <button type="button" class="controlButton" data-control="p2-right">P2 Right</button>
+            <button type="button" class="controlButton" data-control="p2-jump">P2 Jump</button>
+            <button type="button" class="controlButton" data-control="p2-attack">P2 Attack</button>
+        </div>
     </div>
     <!-- to animate health bar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/gsap.min.js" integrity="sha512-gmwBmiTVER57N3jYS3LinA9eb8aHrJua5iQD7yqYCKa5x6Jjc7VDVaEA0je0Lu0bP9j7tEjV3+1qUm6loO99Kw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

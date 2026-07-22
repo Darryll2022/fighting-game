@@ -191,6 +191,72 @@ const keys = {
     }
 }
 
+function handleControlPress(control) {
+    switch (control) {
+        case 'p1-left':
+            if (!player.dead) {
+                keys.a.pressed = true
+                player.lastKey = 'a'
+            }
+            break
+        case 'p1-right':
+            if (!player.dead) {
+                keys.d.pressed = true
+                player.lastKey = 'd'
+            }
+            break
+        case 'p1-jump':
+            if (!player.dead) {
+                player.velocity.y = -20
+            }
+            break
+        case 'p1-attack':
+            if (!player.dead) {
+                player.attack()
+            }
+            break
+        case 'p2-left':
+            if (!enemy.dead) {
+                keys.ArrowLeft.pressed = true
+                enemy.lastKey = 'ArrowLeft'
+            }
+            break
+        case 'p2-right':
+            if (!enemy.dead) {
+                keys.ArrowRight.pressed = true
+                enemy.lastKey = 'ArrowRight'
+            }
+            break
+        case 'p2-jump':
+            if (!enemy.dead) {
+                enemy.velocity.y = -20
+            }
+            break
+        case 'p2-attack':
+            if (!enemy.dead) {
+                enemy.attack()
+            }
+            break
+    }
+}
+
+function handleControlRelease(control) {
+    switch (control) {
+        case 'p1-left':
+            keys.a.pressed = false
+            break
+        case 'p1-right':
+            keys.d.pressed = false
+            break
+        case 'p2-left':
+            keys.ArrowLeft.pressed = false
+            break
+        case 'p2-right':
+            keys.ArrowRight.pressed = false
+            break
+    }
+}
+
 decreaseTimer()
 
  function animate() {
@@ -305,92 +371,83 @@ decreaseTimer()
 
  }
 
- animate()
+animate()
 
- window.addEventListener('keydown', (event) => {
-    if (blockedKeys.has(event.key)) {
-        event.preventDefault()
-    }
-    if(!player.dead){
-
-    switch (event.key) {
-        case 'd' :
-            keys.d.pressed = true
-            player.lastKey = 'd'
-            break
-
-        case 'a' :
-            keys.a.pressed = true
-            player.lastKey = 'a'
-            break
-
-        case 'w' :
-            player.velocity.y = -20
-            break
-
-        case ' ' :
-            player.attack()
-            break
-     }
-    }
-        if(!enemy.dead) {
-        switch(event.key) {
-        case 'ArrowRight' :
-        keys.ArrowRight.pressed = true
-        enemy.lastKey = 'ArrowRight'
-        break
-
-        case 'ArrowLeft' :
-        keys.ArrowLeft.pressed = true
-        enemy.lastKey = 'ArrowLeft'
-        break
-
-        case 'ArrowUp' :
-        enemy.velocity.y = -20
-        break
-
-        case 'ArrowDown':
-        enemy.attack()
-        break
-        
-    }
+function handleKeyboardPress(key) {
+   switch (key) {
+       case 'd':
+           handleControlPress('p1-right')
+           break
+       case 'a':
+           handleControlPress('p1-left')
+           break
+       case 'w':
+           handleControlPress('p1-jump')
+           break
+       case ' ':
+           handleControlPress('p1-attack')
+           break
+       case 'ArrowRight':
+           handleControlPress('p2-right')
+           break
+       case 'ArrowLeft':
+           handleControlPress('p2-left')
+           break
+       case 'ArrowUp':
+           handleControlPress('p2-jump')
+           break
+       case 'ArrowDown':
+           handleControlPress('p2-attack')
+           break
+   }
 }
+
+function handleKeyboardRelease(key) {
+   switch (key) {
+       case 'd':
+           handleControlRelease('p1-right')
+           break
+       case 'a':
+           handleControlRelease('p1-left')
+           break
+       case 'ArrowRight':
+           handleControlRelease('p2-right')
+           break
+       case 'ArrowLeft':
+           handleControlRelease('p2-left')
+           break
+   }
+}
+
+window.addEventListener('keydown', (event) => {
+   if (blockedKeys.has(event.key)) {
+       event.preventDefault()
+   }
+   handleKeyboardPress(event.key)
 })
 
 
- window.addEventListener('keyup', (event) => {
-    if (blockedKeys.has(event.key)) {
-        event.preventDefault()
-    }
-    switch (event.key) {
-        case 'd' :
-        keys.d.pressed = false
-        break
+window.addEventListener('keyup', (event) => {
+   if (blockedKeys.has(event.key)) {
+       event.preventDefault()
+   }
+   handleKeyboardRelease(event.key)
+})
 
-       case 'a' :
-        keys.a.pressed = false
-        break
+const mobileControlButtons = document.querySelectorAll('[data-control]')
 
-        case 'w' :
-        keys.w.pressed = false
-        break
-    }
-// enemy keys
-switch (event.key) {
-    case 'ArrowRight' :
-    keys.ArrowRight.pressed = false
-    break
+mobileControlButtons.forEach((button) => {
+   const control = button.dataset.control
+   const releaseControl = (event) => {
+       event.preventDefault()
+       handleControlRelease(control)
+   }
 
-   case 'ArrowLeft' :
-    keys.ArrowLeft.pressed = false
-    break
-
-    case 'ArrowUp' :
-    keys.ArrowUp.pressed = false
-    break
-    //    player.velocity.x = 0
-    //    break
-
-    }
-   
+   button.addEventListener('pointerdown', (event) => {
+       event.preventDefault()
+       handleControlPress(control)
+   })
+   button.addEventListener('pointerup', releaseControl)
+   button.addEventListener('pointercancel', releaseControl)
+   button.addEventListener('pointerleave', releaseControl)
 })
