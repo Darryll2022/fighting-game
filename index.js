@@ -191,6 +191,231 @@ const keys = {
     }
 }
 
+const isMobileControlsMode = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+const mobileLobby = document.querySelector('#mobileLobby')
+const mobileControls = document.querySelector('#mobileControls')
+const sessionStatus = document.querySelector('#sessionStatus')
+const joinP1Button = document.querySelector('#joinP1Button')
+const joinP2Button = document.querySelector('#joinP2Button')
+const leaveSessionButton = document.querySelector('#leaveSessionButton')
+const ROOM_QUERY_PARAM = 'room'
+const DEFAULT_ROOM = 'default'
+const CLIENT_ID_SESSION_KEY = 'fightingGameClientId'
+const SESSION_STATE_KEY_PREFIX = 'fightingGameSessionState:'
+const HEARTBEAT_INTERVAL_MS = 2000
+const STALE_CLIENT_MS = 7000
+const roomUrl = new URL(window.location.href)
+const sessionRoom = roomUrl.searchParams.get(ROOM_QUERY_PARAM)?.trim() || DEFAULT_ROOM
+
+if (!roomUrl.searchParams.get(ROOM_QUERY_PARAM)) {
+    roomUrl.searchParams.set(ROOM_QUERY_PARAM, sessionRoom)
+    window.history.replaceState({}, '', roomUrl.toString())
+}
+
+function getClientId() {
+    const existingClientId = window.sessionStorage.getItem(CLIENT_ID_SESSION_KEY)
+
+    if (existingClientId) {
+        return existingClientId
+    }
+
+    const generatedClientId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    window.sessionStorage.setItem(CLIENT_ID_SESSION_KEY, generatedClientId)
+    return generatedClientId
+}
+
+const clientId = getClientId()
+let selectedMobilePlayer = null
+
+function getSessionStorageKey() {
+    return `${SESSION_STATE_KEY_PREFIX}${sessionRoom}`
+}
+
+function createEmptySessionState() {
+    return {
+        players: {
+            p1: null,
+            p2: null
+        },
+        heartbeats: {}
+    }
+}
+
+function getSessionState() {
+    const rawState = window.localStorage.getItem(getSessionStorageKey())
+
+    if (!rawState) {
+        return createEmptySessionState()
+    }
+
+    try {
+        const parsedState = JSON.parse(rawState)
+        return {
+            players: {
+                p1: parsedState?.players?.p1 || null,
+                p2: parsedState?.players?.p2 || null
+            },
+            heartbeats: parsedState?.heartbeats || {}
+        }
+    } catch (_error) {
+        return createEmptySessionState()
+    }
+}
+
+function saveSessionState(state) {
+    window.localStorage.setItem(getSessionStorageKey(), JSON.stringify(state))
+}
+
+function pruneSessionState(state) {
+    const now = Date.now()
+    const activeHeartbeats = {}
+
+    Object.entries(state.heartbeats || {}).forEach(([id, timestamp]) => {
+        if (typeof timestamp === 'number' && now - timestamp <= STALE_CLIENT_MS) {
+            activeHeartbeats[id] = timestamp
+        }
+    })
+
+    const players = {
+        p1: state.players?.p1 || null,
+        p2: state.players?.p2 || null
+    }
+
+    if (players.p1 && !activeHeartbeats[players.p1]) {
+        players.p1 = null
+    }
+
+    if (players.p2 && !activeHeartbeats[players.p2]) {
+        players.p2 = null
+    }
+
+    state.heartbeats = activeHeartbeats
+    state.players = players
+    return state
+}
+
+function updateSessionState(updater) {
+    const currentState = pruneSessionState(getSessionState())
+    updater(currentState)
+    saveSessionState(currentState)
+    return currentState
+}
+
+function describeRoleOwner(roleOwner) {
+    if (!roleOwner) {
+        return 'Available'
+    }
+
+    if (roleOwner === clientId) {
+        return 'You'
+    }
+
+    return 'Connected'
+}
+
+function syncMobileSessionUI() {
+    if (!isMobileControlsMode || !mobileControls || !sessionStatus) {
+        return
+    }
+
+    const state = updateSessionState((sessionState) => {
+        if (selectedMobilePlayer && sessionState.players[selectedMobilePlayer] !== clientId) {
+            selectedMobilePlayer = null
+        }
+    })
+
+    const p1Owner = state.players.p1
+    const p2Owner = state.players.p2
+    const p1TakenByOther = Boolean(p1Owner && p1Owner !== clientId)
+    const p2TakenByOther = Boolean(p2Owner && p2Owner !== clientId)
+    const p2LockedUntilP1 = !p1Owner
+
+    if (joinP1Button) {
+        joinP1Button.disabled = p1TakenByOther
+    }
+
+    if (joinP2Button) {
+        joinP2Button.disabled = p2TakenByOther || p2LockedUntilP1
+    }
+
+    if (leaveSessionButton) {
+        leaveSessionButton.disabled = !selectedMobilePlayer
+    }
+
+    sessionStatus.textContent = `Room: ${sessionRoom} | Player 1: ${describeRoleOwner(p1Owner)} | Player 2: ${describeRoleOwner(p2Owner)} | Selected: ${selectedMobilePlayer || 'None'}`
+
+    mobileControls.dataset.selectedPlayer = selectedMobilePlayer || ''
+    mobileControls.classList.toggle('is-visible', Boolean(selectedMobilePlayer))
+}
+
+function claimMobileRole(role) {
+    updateSessionState((state) => {
+        const roleOwner = state.players[role]
+
+        if (roleOwner && roleOwner !== clientId) {
+            return
+        }
+
+        if (role === 'p2' && !state.players.p1) {
+            return
+        }
+
+        const oppositeRole = role === 'p1' ? 'p2' : 'p1'
+        if (state.players[oppositeRole] === clientId) {
+            state.players[oppositeRole] = null
+        }
+
+        state.players[role] = clientId
+        state.heartbeats[clientId] = Date.now()
+        selectedMobilePlayer = role
+    })
+
+    syncMobileSessionUI()
+}
+
+function leaveMobileRole() {
+    updateSessionState((state) => {
+        if (state.players.p1 === clientId) {
+            state.players.p1 = null
+        }
+
+        if (state.players.p2 === clientId) {
+            state.players.p2 = null
+        }
+    })
+
+    keys.a.pressed = false
+    keys.d.pressed = false
+    keys.ArrowLeft.pressed = false
+    keys.ArrowRight.pressed = false
+
+    selectedMobilePlayer = null
+    syncMobileSessionUI()
+}
+
+function sendMobileHeartbeat() {
+    if (!selectedMobilePlayer) {
+        return
+    }
+
+    updateSessionState((state) => {
+        state.heartbeats[clientId] = Date.now()
+    })
+}
+
+function canUseMobileControl(control) {
+    if (!isMobileControlsMode) {
+        return true
+    }
+
+    if (!selectedMobilePlayer) {
+        return false
+    }
+
+    const controlRole = control.startsWith('p1-') ? 'p1' : 'p2'
+    return controlRole === selectedMobilePlayer
+}
+
 function handleControlPress(control) {
     switch (control) {
         case 'p1-left':
@@ -440,14 +665,57 @@ mobileControlButtons.forEach((button) => {
    const control = button.dataset.control
    const releaseControl = (event) => {
        event.preventDefault()
+       if (!canUseMobileControl(control)) {
+           return
+       }
        handleControlRelease(control)
    }
 
    button.addEventListener('pointerdown', (event) => {
        event.preventDefault()
+       if (!canUseMobileControl(control)) {
+           return
+       }
        handleControlPress(control)
    })
    button.addEventListener('pointerup', releaseControl)
    button.addEventListener('pointercancel', releaseControl)
    button.addEventListener('pointerleave', releaseControl)
 })
+
+if (isMobileControlsMode && mobileLobby) {
+   if (joinP1Button) {
+       joinP1Button.addEventListener('click', () => {
+           claimMobileRole('p1')
+       })
+   }
+
+   if (joinP2Button) {
+       joinP2Button.addEventListener('click', () => {
+           claimMobileRole('p2')
+       })
+   }
+
+   if (leaveSessionButton) {
+       leaveSessionButton.addEventListener('click', () => {
+           leaveMobileRole()
+       })
+   }
+
+   window.addEventListener('storage', (event) => {
+       if (event.key === getSessionStorageKey()) {
+           syncMobileSessionUI()
+       }
+   })
+
+   window.addEventListener('beforeunload', () => {
+       leaveMobileRole()
+   })
+
+   window.setInterval(() => {
+       sendMobileHeartbeat()
+       syncMobileSessionUI()
+   }, HEARTBEAT_INTERVAL_MS)
+
+   syncMobileSessionUI()
+}
