@@ -10,22 +10,25 @@ function rectangularCollision({rectangle1, rectangle2}) {
 function determineWinner({player, enemy,timerId}) {
     clearTimeout(timerId)
     document.querySelector('#displayText').style.display = 'flex'
+    const displayText = document.querySelector('#displayText')
     if (player.health === enemy.health) {
-        document.querySelector('#displayText').innerHTML = 'Tie'
+        displayText.textContent = 'Tie'
       }  else if (player.health > enemy.health) {
-        document.querySelector('#displayText').innerHTML = 'Player 1 Wins'
+        displayText.textContent = 'Player 1 Wins'
       } else if (player.health < enemy.health) {
-        document.querySelector('#displayText').innerHTML = 'Player 2 Wins'
+        displayText.textContent = 'Player 2 Wins'
       }
 }
 
 let timer = 100
 let timerId 
 function decreaseTimer() {
+    const timerElement = document.querySelector('#timer')
     if (timer > 0) {
     timerId = setTimeout(decreaseTimer,1000)
     timer--
-    document.querySelector('#timer').innerHTML = timer
+    timerElement.textContent = timer
+    timerElement.setAttribute('aria-valuenow', timer)
     } 
       if (timer === 0) {  
         determineWinner({player, enemy, timerId})
